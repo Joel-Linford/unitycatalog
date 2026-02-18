@@ -87,3 +87,35 @@ If you still don’t see the ontology, use **Method 1** (seed script) with the s
 | UI dev server  | 3000 | Open this in the browser |
 | Backend proxy  | 8080 | UI proxy target          |
 | Backend API    | 8081 | Used by transcoder      |
+
+## Run with Docker (server + UI)
+
+From the repo root:
+
+```bash
+docker compose up --build
+```
+
+(Uses `compose.yaml` at the repo root.)
+
+- **Server** listens on port **8080** (API at `http://localhost:8080/api/2.1/unity-catalog/...`).
+- **UI** runs on port **3000** and proxies API requests to the server. Open **http://localhost:3000** in the browser.
+
+The first build can take several minutes (sbt compile, yarn install). Server data (H2 DB and config) is stored in a Docker volume `uc-etc` so it persists between runs. The UI waits for the server to be healthy before starting.
+
+**Useful commands:**
+
+| Command | Description |
+|---------|--------------|
+| `docker compose up --build` | Build (if needed) and start server + UI in foreground |
+| `docker compose up -d --build` | Same, but run in background |
+| `docker compose down` | Stop and remove containers |
+| `docker compose up --build ui` | Build/start only the UI (server must already be running) |
+
+**If the server is reported unhealthy:** the healthcheck is a TCP check on port 8080. Ensure nothing else is using port 8080 and that the server container has enough time to start (60s start period). View logs with `docker compose logs server`.
+
+To seed the sample ontology with the server running in Docker, run the seed script on the host (it will hit `localhost:8080`):
+
+```powershell
+.\scripts\seed-education-ontology.ps1
+```

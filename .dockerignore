@@ -1,0 +1,26 @@
+# Git and IDE
+.git
+.gitignore
+.idea
+.cursor
+*.iml
+
+# UI (server image does not need it; ui/ has its own Dockerfile)
+ui/node_modules
+ui/build
+ui/.env*
+ui/npm-debug.log*
+ui/yarn-debug.log*
+ui/yarn-error.log*
+
+# Build outputs (rebuilt in container)
+server/target
+target
+
+# Docs and misc (optional: remove to shrink context)
+docs
+*.md
+
+# Test and local data
+**/test-output
+*.log

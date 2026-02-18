@@ -1,27 +1,39 @@
+# Unity Catalog server + UI (ontology editor)
+# From repo root: docker compose up --build
+# Then open http://localhost:3000 (UI proxies API to server:8080)
+
 name: unitycatalog
 
 services:
-
   server:
-    image: unitycatalog/unitycatalog:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "8080:8080"
     volumes:
-      - type: bind
-        source: ./etc/conf
-        target: /opt/unitycatalog/etc/conf
-      - type: volume
-        source: unitycatalog_data
-        target: /opt/unitycatalog/etc/data
+      - uc-etc:/home/unitycatalog/etc
+    healthcheck:
+      # TCP check: server is listening (API may return 401 without auth)
+      test: ["CMD-SHELL", "bash -c 'echo >/dev/tcp/127.0.0.1/8080' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
   ui:
     build:
-      context: ui/
+      context: ui
       dockerfile: Dockerfile
+      args:
+        PROXY_HOST: server
     ports:
       - "3000:3000"
+    environment:
+      - CHOKIDAR_USEPOLLING=true
     depends_on:
-      - server
+      server:
+        condition: service_healthy
 
 volumes:
-  # Persist docker volume across container restarts
-  unitycatalog_data:
+  uc-etc: {}

@@ -4,10 +4,9 @@ FROM node:18
 ARG PROXY_HOST=server
 WORKDIR /ui
 
-COPY package.json yarn.lock ./
+COPY package.json ./
 
-# TODO: configure this directly from the ui app
-# Work around to set the proxy host; required for running locally with docker-compose
+# Install from package.json only (lockfile can fail to parse in Docker; versions may differ slightly)
 RUN apt-get update && apt-get install -y jq && \
     jq --arg proxy "http://$PROXY_HOST:8080" '.proxy = $proxy' package.json > temp.json && \
     mv temp.json package.json && \

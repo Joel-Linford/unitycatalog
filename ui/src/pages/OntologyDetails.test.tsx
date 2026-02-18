@@ -86,7 +86,7 @@ describe('OntologyDetails', () => {
       isRefetchError: false,
       isSuccess: true,
       status: 'success',
-    } as ReturnType<typeof ontologies.useGetOntology>);
+    } as unknown as ReturnType<typeof ontologies.useGetOntology>);
   });
 
   afterEach(() => {
