@@ -8,7 +8,10 @@ import io.unitycatalog.server.service.AuthDecorator;
 
 public class IdentityUtils {
   public static String findPrincipalEmailAddress() {
-    ServiceRequestContext ctx = ServiceRequestContext.current();
+    ServiceRequestContext ctx = ServiceRequestContext.currentOrNull();
+    if (ctx == null) {
+      return null;
+    }
     DecodedJWT decodedJWT = ctx.attr(AuthDecorator.DECODED_JWT_ATTR);
     // TODO: if/when authorization becomes mandatory, maybe just throw an exception here?
     if (decodedJWT != null) {

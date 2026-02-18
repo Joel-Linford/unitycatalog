@@ -16,6 +16,7 @@ import { useListTables } from '../hooks/tables';
 import { useListVolumes } from '../hooks/volumes';
 import { useListFunctions } from '../hooks/functions';
 import { useListModels } from '../hooks/models';
+import { useListOntologies } from '../hooks/ontologies';
 import { SchemaTabs } from '../pages/SchemaDetails';
 
 export default function SchemaBrowser() {
@@ -77,6 +78,17 @@ export default function SchemaBrowser() {
         !!entityToExpand.catalog &&
         !!entityToExpand.schema &&
         entityToExpand.type === 'registered_models',
+    },
+  });
+
+  const listOntologiesRequest = useListOntologies({
+    catalog_name: entityToExpand.catalog,
+    schema_name: entityToExpand.schema,
+    options: {
+      enabled:
+        !!entityToExpand.catalog &&
+        !!entityToExpand.schema &&
+        entityToExpand.type === 'ontologies',
     },
   });
 
@@ -144,6 +156,12 @@ export default function SchemaBrowser() {
                   isLeaf: false,
                   selectable: true,
                 },
+                {
+                  title: 'Ontologies',
+                  key: `${catalog_name}.${name}:ontologies`,
+                  isLeaf: false,
+                  selectable: true,
+                },
               ],
             }))
           : [
@@ -195,6 +213,15 @@ export default function SchemaBrowser() {
       );
     }
   }, [entityToExpand, listModelsRequest.data?.registered_models]);
+
+  useEffect(() => {
+    if (entityToExpand.type === 'ontologies') {
+      const entityList = listOntologiesRequest.data?.ontologies ?? [];
+      setTreeData((treeData) =>
+        updateEntityTreeData({ treeData, entityToExpand, entityList }),
+      );
+    }
+  }, [entityToExpand, listOntologiesRequest.data?.ontologies]);
 
   return (
     <div style={{ height: '100%', overflowY: 'auto' }}>
@@ -252,6 +279,10 @@ export default function SchemaBrowser() {
                   return navigate(`/data/${catalog}/${schema}`, {
                     state: { tab: SchemaTabs.Models },
                   });
+                case 'ontologies':
+                  return navigate(`/data/${catalog}/${schema}`, {
+                    state: { tab: SchemaTabs.Ontologies },
+                  });
               }
             } else if (type && entity) {
               switch (type) {
@@ -263,6 +294,8 @@ export default function SchemaBrowser() {
                   return navigate(`/functions/${catalog}/${schema}/${entity}`);
                 case 'registered_models':
                   return navigate(`/models/${catalog}/${schema}/${entity}`);
+                case 'ontologies':
+                  return navigate(`/ontologies/${catalog}/${schema}/${entity}`);
               }
             } else if (schema) {
               navigate(`/data/${catalog}/${schema}`);

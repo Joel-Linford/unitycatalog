@@ -3,12 +3,14 @@ import { TableInterface } from '../hooks/tables';
 import { VolumeInterface } from '../hooks/volumes';
 import { FunctionInterface } from '../hooks/functions';
 import {
+  ApartmentOutlined,
   DeploymentUnitOutlined,
   FolderOutlined,
   FunctionOutlined,
   TableOutlined,
 } from '@ant-design/icons';
 import { ModelInterface } from '../hooks/models';
+import { OntologyInterface } from '../hooks/ontologies';
 
 export function updateEntityTreeData({
   treeData,
@@ -22,6 +24,7 @@ export function updateEntityTreeData({
     | VolumeInterface
     | FunctionInterface
     | ModelInterface
+    | OntologyInterface
   )[];
 }) {
   const { catalog, schema, type } = entityToExpand;
@@ -44,6 +47,8 @@ export function updateEntityTreeData({
                 <FolderOutlined />
               ) : type === 'registered_models' ? (
                 <DeploymentUnitOutlined />
+              ) : type === 'ontologies' ? (
+                <ApartmentOutlined />
               ) : (
                 <TableOutlined />
               )}{' '}

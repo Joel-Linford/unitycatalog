@@ -45,6 +45,8 @@ nav:
       - Trino: integrations/unity-catalog-trino.md
       - XTable: integrations/unity-catalog-xtable.md
   - Deployment: deployment.md
+  - Design:
+      - Graph Ontology: design/graph_ontology.md
   - AI:
       - Quickstart: ai/quickstart.md
       - Usage: ai/usage.md

@@ -41,6 +41,11 @@ tags:
   - name: DeltaCommits
     description: |
       "Delta commits" is a Delta tables feature that allows Delta tables to designate a coordinator to coordinate commits. This is Unity Catalog's API to allow Unity Catalog be the commit coordinator for managed tables. (See https://github.com/delta-io/delta/blob/master/protocol_rfcs/catalog-managed.md for more details)
+  - name: Ontologies
+    description: |
+      Ontologies define the graph data model for property graphs. An ontology resides at the schema level
+      (catalog.schema.ontology_name) and contains node classes (labels) and relationship types (edges) with
+      typed properties. Ontologies are used to catalog, govern, and validate graph databases such as Neo4j.
 paths:
   /catalogs:
     post:
@@ -649,6 +654,123 @@ paths:
       responses:
         '200':
           description: Successfully deleted the volume
+          content:
+            application/json:
+              schema: {}
+  /ontologies:
+    post:
+      tags:
+        - Ontologies
+      operationId: createOntology
+      summary: Create ontology
+      description: |
+        Creates a new ontology in the specified catalog and schema.
+        An ontology defines the graph data model (node classes and relationship types) for property graphs.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOntology'
+      responses:
+        '200':
+          description: The ontology was successfully created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OntologyInfo'
+    get:
+      tags:
+        - Ontologies
+      operationId: listOntologies
+      summary: List ontologies
+      description: |
+        Gets the list of ontologies under the parent catalog and schema.
+      parameters:
+        - name: catalog_name
+          in: query
+          description: Name of parent catalog for ontologies of interest.
+          required: true
+          schema:
+            type: string
+        - name: schema_name
+          in: query
+          description: Name of parent schema for ontologies of interest.
+          required: true
+          schema:
+            type: string
+        - name: max_results
+          in: query
+          description: |
+            Maximum number of ontologies to return.
+          required: false
+          schema:
+            type: integer
+            format: int32
+            maximum: 1000
+        - name: page_token
+          in: query
+          description: Opaque token for pagination.
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The ontologies list was successfully retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListOntologiesResponse'
+  /ontologies/{full_name}:
+    parameters:
+      - name: full_name
+        in: path
+        description: Full name of the ontology (catalog.schema.ontology_name).
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Ontologies
+      operationId: getOntology
+      summary: Get ontology
+      description: |
+        Gets the specified ontology including its node classes and relationship types.
+      responses:
+        '200':
+          description: The ontology was successfully retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OntologyInfo'
+    patch:
+      tags:
+        - Ontologies
+      operationId: updateOntology
+      summary: Update ontology
+      description: |
+        Updates the specified ontology.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOntology'
+      responses:
+        '200':
+          description: The ontology was successfully updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OntologyInfo'
+    delete:
+      tags:
+        - Ontologies
+      operationId: deleteOntology
+      summary: Delete ontology
+      description: |
+        Deletes the specified ontology from the parent catalog and schema.
+      responses:
+        '200':
+          description: The ontology was successfully deleted.
           content:
             application/json:
               schema: {}
@@ -1821,6 +1943,191 @@ components:
           description: |
             Opaque token to retrieve the next page of results. Absent if there are no more pages.
             __page_token__ should be set to this value for the next request (for the next page of results).
+          type: string
+    PropertyType:
+      type: string
+      enum:
+        - STRING
+        - INTEGER
+        - LONG
+        - FLOAT
+        - DOUBLE
+        - BOOLEAN
+        - DATE
+        - LIST
+        - MAP
+      description: |
+        The type of a property in the graph ontology.
+        Fixed set for property graph compatibility (e.g., Neo4j).
+    OntologyPropertyDef:
+      type: object
+      properties:
+        name:
+          description: Name of the property.
+          type: string
+        type:
+          $ref: '#/components/schemas/PropertyType'
+        required:
+          description: Whether the property is required.
+          type: boolean
+          default: false
+      required:
+        - name
+        - type
+    OntologyNodeClass:
+      type: object
+      description: |
+        A node class (label) in the graph ontology. Defines the type of nodes and their properties.
+        Supports inheritance via parent_class. Optionally sourced from a catalog table.
+      properties:
+        name:
+          description: Label/class name (e.g., Person, Product).
+          type: string
+        parent_class:
+          description: Parent class for inheritance (optional).
+          type: string
+        source_table:
+          description: |
+            Optional full name of the Unity Catalog table that backs this node class
+            (e.g. catalog.schema.table). Nodes of this class may be loaded from this table.
+          type: string
+        properties:
+          description: Typed properties for this node class.
+          type: array
+          items:
+            $ref: '#/components/schemas/OntologyPropertyDef'
+      required:
+        - name
+    OntologyRelationshipType:
+      type: object
+      description: |
+        A relationship type (edge) in the graph ontology. Defines directed edges between node classes.
+        Optionally sourced from a catalog table (e.g. a table with source/target keys or edge rows).
+      properties:
+        name:
+          description: Relationship type name (e.g., PURCHASED, WORKS_FOR).
+          type: string
+        source_class:
+          description: Source node class (start of the edge).
+          type: string
+        target_class:
+          description: Target node class (end of the edge).
+          type: string
+        source_table:
+          description: |
+            Optional full name of the Unity Catalog table that backs this relationship type
+            (e.g. catalog.schema.edge_table). Edges may be loaded from this table.
+          type: string
+        properties:
+          description: Typed properties for this relationship type.
+          type: array
+          items:
+            $ref: '#/components/schemas/OntologyPropertyDef'
+      required:
+        - name
+        - source_class
+        - target_class
+    OntologyInfo:
+      type: object
+      properties:
+        name:
+          description: Name of ontology, relative to parent schema.
+          type: string
+        catalog_name:
+          description: Name of parent catalog.
+          type: string
+        schema_name:
+          description: Name of parent schema.
+          type: string
+        full_name:
+          description: Full name in form of __catalog_name__.__schema_name__.__ontology_name__.
+          type: string
+        comment:
+          description: User-provided free-form text description.
+          type: string
+        node_classes:
+          description: Node classes (labels) in the ontology.
+          type: array
+          items:
+            $ref: '#/components/schemas/OntologyNodeClass'
+        relationship_types:
+          description: Relationship types (edges) in the ontology.
+          type: array
+          items:
+            $ref: '#/components/schemas/OntologyRelationshipType'
+        owner:
+          description: Username of current owner of ontology.
+          type: string
+        created_at:
+          description: Time at which this ontology was created, in epoch milliseconds.
+          type: integer
+          format: int64
+        created_by:
+          description: Username of ontology creator.
+          type: string
+        updated_at:
+          description: Time at which this ontology was last modified, in epoch milliseconds.
+          type: integer
+          format: int64
+        updated_by:
+          description: Username of user who last modified ontology.
+          type: string
+    CreateOntology:
+      type: object
+      properties:
+        name:
+          description: Name of ontology, relative to parent schema.
+          type: string
+        catalog_name:
+          description: Name of parent catalog.
+          type: string
+        schema_name:
+          description: Name of parent schema.
+          type: string
+        comment:
+          description: User-provided free-form text description.
+          type: string
+        node_classes:
+          description: Node classes (labels) in the ontology.
+          type: array
+          items:
+            $ref: '#/components/schemas/OntologyNodeClass'
+        relationship_types:
+          description: Relationship types (edges) in the ontology.
+          type: array
+          items:
+            $ref: '#/components/schemas/OntologyRelationshipType'
+      required:
+        - name
+        - catalog_name
+        - schema_name
+    UpdateOntology:
+      type: object
+      properties:
+        comment:
+          description: User-provided free-form text description.
+          type: string
+        node_classes:
+          description: Node classes (labels) in the ontology.
+          type: array
+          items:
+            $ref: '#/components/schemas/OntologyNodeClass'
+        relationship_types:
+          description: Relationship types (edges) in the ontology.
+          type: array
+          items:
+            $ref: '#/components/schemas/OntologyRelationshipType'
+    ListOntologiesResponse:
+      type: object
+      properties:
+        ontologies:
+          description: An array of ontology information objects.
+          type: array
+          items:
+            $ref: '#/components/schemas/OntologyInfo'
+        next_page_token:
+          description: |
+            Opaque token to retrieve the next page of results. Absent if there are no more pages.
           type: string
     SchemaInfo:
       type: object

@@ -36,6 +36,7 @@ import io.unitycatalog.server.service.FunctionService;
 import io.unitycatalog.server.service.IcebergRestCatalogService;
 import io.unitycatalog.server.service.MetastoreService;
 import io.unitycatalog.server.service.ModelService;
+import io.unitycatalog.server.service.OntologyService;
 import io.unitycatalog.server.service.PermissionService;
 import io.unitycatalog.server.service.SchemaService;
 import io.unitycatalog.server.service.Scim2SelfService;
@@ -170,6 +171,7 @@ public class UnityCatalogServer {
     StagingTableService stagingTableService = new StagingTableService(authorizer, repositories);
     FunctionService functionService = new FunctionService(authorizer, repositories);
     ModelService modelService = new ModelService(authorizer, repositories);
+    OntologyService ontologyService = new OntologyService(authorizer, repositories);
     CredentialService credentialService = new CredentialService(authorizer, repositories);
     ExternalLocationService externalLocationService =
         new ExternalLocationService(authorizer, repositories);
@@ -218,6 +220,7 @@ public class UnityCatalogServer {
             BASE_PATH + "staging-tables", stagingTableService, requestConverterFunction)
         .annotatedService(BASE_PATH + "functions", functionService, requestConverterFunction)
         .annotatedService(BASE_PATH + "models", modelService, requestConverterFunction)
+        .annotatedService(BASE_PATH + "ontologies", ontologyService, requestConverterFunction)
         .annotatedService(BASE_PATH, metastoreService, requestConverterFunction)
         .annotatedService(
             BASE_PATH + "temporary-table-credentials",

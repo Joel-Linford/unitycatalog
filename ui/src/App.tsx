@@ -30,6 +30,7 @@ import Login from './pages/Login';
 import { AuthProvider, useAuth } from './context/auth-context';
 import { UserOutlined } from '@ant-design/icons';
 import ModelVersionDetails from './pages/ModelVersionDetails';
+import OntologyDetails from './pages/OntologyDetails';
 
 // TODO:
 // As of [19/02/2025], this implementation should be updated once the following PR are merged.
@@ -72,6 +73,10 @@ const router = createBrowserRouter([
       {
         path: '/models/:catalog/:schema/:model/versions/:version',
         element: <ModelVersionDetails />,
+      },
+      {
+        path: '/ontologies/:catalog/:schema/:ontology',
+        element: <OntologyDetails />,
       },
     ],
   },

@@ -413,6 +413,9 @@ lazy val server = (project in file("server"))
       (Test / runMain).toTask(s" io.unitycatalog.server.utils.PopulateTestDatabase").value
     },
     Test / javaOptions += s"-Duser.dir=${(ThisBuild / baseDirectory).value.getAbsolutePath}",
+    // Use repo root as working dir so populateTestDB and server/run use same etc/conf and etc/db
+    run / baseDirectory := (ThisBuild / baseDirectory).value,
+    Test / run / baseDirectory := (ThisBuild / baseDirectory).value,
     // Include server and control models in the bin package for server
     // This will allow us to have a single maven artifact and not 3 (server, server models, control models)
     Compile / packageBin / mappings ++= (Compile / packageBin / mappings).value ++

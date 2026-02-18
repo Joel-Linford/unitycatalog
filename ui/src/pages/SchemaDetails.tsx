@@ -14,12 +14,14 @@ import SchemaActionsDropdown from '../components/schemas/SchemaActionDropdown';
 import { EditSchemaDescriptionModal } from '../components/modals/EditSchemaDescriptionModal';
 import { useNotification } from '../utils/NotificationContext';
 import ModelsList from '../components/models/ModelsList';
+import OntologiesList from '../components/ontologies/OntologiesList';
 
 export enum SchemaTabs {
   Tables = 'Tables',
   Volumes = 'Volumes',
   Functions = 'Functions',
   Models = 'Models',
+  Ontologies = 'Ontologies',
 }
 
 const SCHEMA_TABS_MAP = {
@@ -27,6 +29,7 @@ const SCHEMA_TABS_MAP = {
   [SchemaTabs.Volumes]: VolumesList,
   [SchemaTabs.Functions]: FunctionsList,
   [SchemaTabs.Models]: ModelsList,
+  [SchemaTabs.Ontologies]: OntologiesList,
 };
 
 export default function SchemaDetails() {
@@ -153,6 +156,9 @@ function SchemaDetailsTabs({ catalog, schema, tab }: SchemaDetailsTabsProps) {
           </Radio.Button>
           <Radio.Button value={SchemaTabs.Models}>
             {SchemaTabs.Models}
+          </Radio.Button>
+          <Radio.Button value={SchemaTabs.Ontologies}>
+            {SchemaTabs.Ontologies}
           </Radio.Button>
         </Radio.Group>
       }

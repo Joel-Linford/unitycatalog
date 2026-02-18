@@ -9,6 +9,7 @@ import io.unitycatalog.server.persist.dao.FunctionInfoDAO;
 import io.unitycatalog.server.persist.dao.FunctionParameterInfoDAO;
 import io.unitycatalog.server.persist.dao.MetastoreDAO;
 import io.unitycatalog.server.persist.dao.ModelVersionInfoDAO;
+import io.unitycatalog.server.persist.dao.OntologyInfoDAO;
 import io.unitycatalog.server.persist.dao.PropertyDAO;
 import io.unitycatalog.server.persist.dao.RegisteredModelInfoDAO;
 import io.unitycatalog.server.persist.dao.SchemaInfoDAO;
@@ -71,6 +72,7 @@ public class HibernateConfigurator {
       configuration.addAnnotatedClass(CredentialDAO.class);
       configuration.addAnnotatedClass(ExternalLocationDAO.class);
       configuration.addAnnotatedClass(DeltaCommitDAO.class);
+      configuration.addAnnotatedClass(OntologyInfoDAO.class);
 
       ServiceRegistry serviceRegistry =
           new StandardServiceRegistryBuilder().applySettings(configuration.getProperties()).build();
@@ -82,7 +84,9 @@ public class HibernateConfigurator {
   }
 
   public static Properties setupHibernateProperties(ServerProperties serverProperties) {
-    Path hibernatePropertiesPath = Paths.get("etc/conf/hibernate.properties");
+    // Resolve relative to user.dir so populateTestDB and server use same DB file
+    Path root = Paths.get(System.getProperty("user.dir", "."));
+    Path hibernatePropertiesPath = root.resolve("etc/conf/hibernate.properties");
     Properties hibernateProperties = new Properties();
     if (!hibernatePropertiesPath.toFile().exists()) {
       LOGGER.warn("Hibernate properties file not found: {}", hibernatePropertiesPath);

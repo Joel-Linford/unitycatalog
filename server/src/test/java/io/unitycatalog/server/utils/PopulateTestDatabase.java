@@ -5,6 +5,8 @@ import static io.unitycatalog.server.utils.ColumnUtils.getTypeJson;
 import static io.unitycatalog.server.utils.ColumnUtils.getTypeText;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.unitycatalog.server.exception.BaseException;
+import io.unitycatalog.server.exception.ErrorCode;
 import io.unitycatalog.server.model.ColumnTypeName;
 import io.unitycatalog.server.model.CreateCatalog;
 import io.unitycatalog.server.model.CreateFunction;
@@ -23,6 +25,7 @@ import io.unitycatalog.server.persist.FunctionRepository;
 import io.unitycatalog.server.persist.Repositories;
 import io.unitycatalog.server.persist.SchemaRepository;
 import io.unitycatalog.server.persist.dao.ColumnInfoDAO;
+import io.unitycatalog.server.persist.dao.OntologyInfoDAO;
 import io.unitycatalog.server.persist.dao.PropertyDAO;
 import io.unitycatalog.server.persist.dao.TableInfoDAO;
 import io.unitycatalog.server.persist.dao.VolumeInfoDAO;
@@ -35,6 +38,7 @@ import java.util.UUID;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
+import org.hibernate.query.Query;
 
 /**
  * This is a utility class to populate the test database with some sample data. All the quickstart
@@ -62,17 +66,75 @@ public class PopulateTestDatabase {
     String catalogName = "unity";
     String schemaName = "default";
 
-    CreateCatalog catalog1 = new CreateCatalog().name(catalogName).comment("Main catalog");
-    catalogRepository.addCatalog(catalog1);
+    try {
+      CreateCatalog catalog1 = new CreateCatalog().name(catalogName).comment("Main catalog");
+      catalogRepository.addCatalog(catalog1);
+    } catch (BaseException e) {
+      if (e.getErrorCode() != ErrorCode.ALREADY_EXISTS) {
+        throw e;
+      }
+      // Catalog already exists (e.g. from previous run or server use)
+    }
 
-    CreateSchema schema1 =
-        new CreateSchema().name(schemaName).catalogName(catalogName).comment("Default schema");
-    schemaRepository.createSchema(schema1);
+    try {
+      CreateSchema schema1 =
+          new CreateSchema().name(schemaName).catalogName(catalogName).comment("Default schema");
+      schemaRepository.createSchema(schema1);
+    } catch (BaseException e) {
+      if (e.getErrorCode() != ErrorCode.ALREADY_EXISTS) {
+        throw e;
+      }
+      // Schema already exists
+    }
 
     SchemaInfo schemaInfo = schemaRepository.getSchema(catalogName + "." + schemaName);
     String schemaId = schemaInfo.getSchemaId();
 
     SessionFactory factory = hibernateConfigurator.getSessionFactory();
+
+    // Create sample education ontology if not already present: (Student)-[attend]-(School),
+    // (Student)-[take]-(Class), (Class)-[in]-(Degree)
+    try (Session session = factory.openSession()) {
+      Transaction tx = session.beginTransaction();
+      Query<OntologyInfoDAO> existingQuery =
+          session.createQuery(
+              "FROM OntologyInfoDAO WHERE name = :name AND schemaId = :schemaId",
+              OntologyInfoDAO.class);
+      existingQuery.setParameter("name", "education_sample");
+      existingQuery.setParameter("schemaId", UUID.fromString(schemaId));
+      if (existingQuery.uniqueResult() != null) {
+        System.out.println("Ontology unity.default.education_sample already exists, skipping.");
+      } else {
+        String educationNodeClassesJson =
+            "[{\"name\":\"Student\",\"parent_class\":null,\"properties\":[]},"
+                + "{\"name\":\"School\",\"parent_class\":null,\"properties\":[]},"
+                + "{\"name\":\"Class\",\"parent_class\":null,\"properties\":[]},"
+                + "{\"name\":\"Degree\",\"parent_class\":null,\"properties\":[]}]";
+        String educationRelationshipTypesJson =
+            "[{\"name\":\"attend\",\"source_class\":\"Student\",\"target_class\":\"School\",\"properties\":[]},"
+                + "{\"name\":\"take\",\"source_class\":\"Student\",\"target_class\":\"Class\",\"properties\":[]},"
+                + "{\"name\":\"in\",\"source_class\":\"Class\",\"target_class\":\"Degree\",\"properties\":[]}]";
+        Date now = new Date();
+        OntologyInfoDAO educationOntology =
+            OntologyInfoDAO.builder()
+                .id(UUID.randomUUID())
+                .name("education_sample")
+                .schemaId(UUID.fromString(schemaId))
+                .comment(
+                    "Sample ontology: students attend school, take classes; classes belong to a degree.")
+                .nodeClassesJson(educationNodeClassesJson)
+                .relationshipTypesJson(educationRelationshipTypesJson)
+                .owner("populate@test")
+                .createdAt(now)
+                .createdBy("populate@test")
+                .updatedAt(now)
+                .updatedBy("populate@test")
+                .build();
+        session.persist(educationOntology);
+        System.out.println("Created sample ontology: unity.default.education_sample");
+      }
+      tx.commit();
+    }
 
     // Create managed table
     ColumnInfoDAO idColumn =
